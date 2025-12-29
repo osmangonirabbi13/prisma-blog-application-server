@@ -5,7 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 
 const app = express();
 
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json());
 
