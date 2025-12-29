@@ -1,11 +1,15 @@
 import express from "express";
 import { postRouter } from "./modules/post/post.routes";
+import { auth } from "./lib/auth";
+import { toNodeHandler } from "better-auth/node";
 
 const app = express();
 
-app.use(express.json())
+app.all("/api/auth/*", toNodeHandler(auth));
 
-app.use("/posts" , postRouter)
+app.use(express.json());
+
+app.use("/posts", postRouter);
 
 app.get("/", (req, res) => {
   res.send("hello world");
