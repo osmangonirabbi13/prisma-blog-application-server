@@ -1,4 +1,8 @@
-import { Post, PostStatus } from "../../../generated/prisma/client";
+import {
+  CommentStatus,
+  Post,
+  PostStatus,
+} from "../../../generated/prisma/client";
 import { PostWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
 
@@ -118,28 +122,56 @@ const getAllPost = async ({
 };
 
 const getPostById = async (postId: string) => {
-    return await prisma.$transaction(async (tx) => {
-        await tx.post.update({
-            where: {
-                id: postId
+  return await prisma.$transaction(async (tx) => {
+    await tx.post.update({
+      where: {
+        id: postId,
+      },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
+    const postData = await tx.post.findUnique({
+      where: {
+        id: postId,
+      },
+      include: { 
+        comments: {
+          where: {
+            parentId: null,
+            status: CommentStatus.APPROVED,
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            replies: {
+              where: {
+                status: CommentStatus.APPROVED,
+              },
+              orderBy: { createdAt: "asc" },
+              include: {
+                replies: {
+                  where: { 
+                    status: CommentStatus.APPROVED,
+                  },
+                  orderBy: { createdAt: "asc" },
+                },
+              },
             },
-            data: {
-                views: {
-                    increment: 1
-                }
-            }
-        })
-        const postData = await tx.post.findUnique({
-            where: {
-                id: postId
-            }
-        })
-        return postData
-    })
-}
+          },
+        },
+        _count: {
+          select: { comments: true },
+        },
+      },
+    });
+    return postData;
+  });
+};
 
 export const postService = {
   createPost,
   getAllPost,
-  getPostById
+  getPostById,
 };
